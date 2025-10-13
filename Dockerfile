@@ -17,19 +17,21 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.18
 
-RUN apk --no-cache add ca-certificates postgresql-client
+# Install required packages
+RUN apk --no-cache add ca-certificates postgresql15-client 2>/dev/null || \
+    apk --no-cache add ca-certificates 2>/dev/null || true
 
 WORKDIR /root/
 
 # Copy the binary from builder
 COPY --from=builder /app/main .
 COPY --from=builder /app/migrations ./migrations
-COPY scripts/migrate.sh ./migrate.sh
 
-# Make script executable
-RUN chmod +x ./migrate.sh
+# Copy migration script (optional)
+COPY scripts/migrate.sh ./migrate.sh 2>/dev/null || true
+RUN chmod +x ./migrate.sh 2>/dev/null || true
 
 # Expose port
 EXPOSE 8080

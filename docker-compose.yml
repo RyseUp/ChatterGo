@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -41,7 +42,7 @@ services:
       JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
       JWT_ACCESS_EXPIRY_MIN: 15
       JWT_REFRESH_EXPIRY_MIN: 10080
-    command: sh -c "./migrate.sh && ./main"
+
     restart: unless-stopped
 
 volumes:
