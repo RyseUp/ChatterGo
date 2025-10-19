@@ -1,0 +1,27 @@
+app:
+  name: "ChatterGo"
+  environment: "development"
+  debug: true
+  log_level: "info"
+
+server:
+  host: "0.0.0.0"
+  port: 9090
+
+database:
+  host: "localhost"
+  port: 5433
+  user: admin
+  password: 123456
+  dbname: "chattergo"
+  sslmode: "disable"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: "your-secret-key-change-this-in-production"
+  expiration_hours: 24
