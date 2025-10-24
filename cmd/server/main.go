@@ -9,11 +9,31 @@ import (
 	"time"
 
 	"github.com/RyseUp/ChatterGo/config"
+	_ "github.com/RyseUp/ChatterGo/docs"
 	"github.com/RyseUp/ChatterGo/internal/models"
 	"github.com/RyseUp/ChatterGo/internal/repositories/postgres"
 	"github.com/RyseUp/ChatterGo/internal/services"
 	"github.com/RyseUp/ChatterGo/pkg/database"
 )
+
+// @title ChatterGo API
+// @version 1.0
+// @description A real-time messaging backend API
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:9090
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 
 func main() {
 	cfg, err := config.Load()
