@@ -2,19 +2,38 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/RyseUp/ChatterGo/config"
-	"github.com/RyseUp/ChatterGo/internal/app"
+	_ "github.com/RyseUp/ChatterGo/docs"
+	"github.com/RyseUp/ChatterGo/internal/models"
+	"github.com/RyseUp/ChatterGo/internal/repositories/postgres"
+	"github.com/RyseUp/ChatterGo/internal/services"
 	"github.com/RyseUp/ChatterGo/pkg/database"
-	"github.com/gin-gonic/gin"
 )
+
+// @title ChatterGo API
+// @version 1.0
+// @description A real-time messaging backend API
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:9090
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 
 func main() {
 	cfg, err := config.Load()
@@ -27,19 +46,24 @@ func main() {
 		log.Fatalf("failed to connect DB: %v", err)
 	}
 
-	engine := gin.Default()
-	a := app.New(engine, db, cfg)
-	a.RegisterRoutes()
+	// Auto-migrate the schema
+	if err := db.AutoMigrate(&models.User{}); err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
 
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler: engine,
+	// Create repository
+	repo := postgres.NewQueries(db, cfg)
+
+	// Create and configure server
+	server, err := services.NewServer(cfg, repo)
+	if err != nil {
+		log.Fatalf("failed to create server: %v", err)
 	}
 
 	// Start Server
 	go func() {
-		log.Printf("HTTP Listening on %s", srv.Addr)
-		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("HTTP Listening on :%d", cfg.Server.Port)
+		if err = server.Start(); err != nil {
 			log.Fatalf("listen: %v", err)
 		}
 	}()
@@ -51,7 +75,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(ctx); err != nil {
 		log.Fatalf("server shutdown failed: %v", err)
 	}
 	log.Printf("server exited properly")
