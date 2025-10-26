@@ -7,10 +7,8 @@ import (
 )
 
 const (
-	
 	DefaultCost = bcrypt.DefaultCost
 )
-
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), DefaultCost)
@@ -19,7 +17,6 @@ func HashPassword(password string) (string, error) {
 	}
 	return string(bytes), nil
 }
-
 
 func CheckPassword(password, hashedPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))

@@ -80,6 +80,26 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 			usersProtected.GET("/profile", s.GetUserProfile)
 			usersProtected.PATCH("/profile", s.UpdateUserProfile)
 		}
+
+		// Conversation routes (protected)
+		conversations := api.Group("/conversations")
+		conversations.Use(middleware.AuthMiddleware(s.cfg.JWT.Secret))
+		{
+			conversations.POST("/direct", s.CreateDirectConversation)
+			conversations.POST("/group", s.CreateGroupConversation)
+			conversations.GET("/", s.GetConversations)
+			conversations.GET("/:id", s.GetConversation)
+			conversations.POST("/:id/messages", s.SendMessage)
+			conversations.GET("/:id/messages", s.GetMessages)
+		}
+
+		// Message routes (protected)
+		messages := api.Group("/messages")
+		messages.Use(middleware.AuthMiddleware(s.cfg.JWT.Secret))
+		{
+			messages.PATCH("/:id", s.UpdateMessage)
+			messages.DELETE("/:id", s.DeleteMessage)
+		}
 	}
 }
 

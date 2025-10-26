@@ -8,13 +8,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-
 type JWTClaims struct {
 	UserID uint   `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
-
 
 type TokenPair struct {
 	AccessToken  string `json:"access_token"`
@@ -26,15 +24,13 @@ var (
 	ErrExpiredToken = errors.New("token has expired")
 )
 
-
 func GenerateTokenPair(userID uint, email, secret string, accessExpiration, refreshExpiration time.Duration) (*TokenPair, error) {
-	
+
 	accessToken, err := generateToken(userID, email, secret, accessExpiration, "access")
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	
 	refreshToken, err := generateToken(userID, email, secret, refreshExpiration, "refresh")
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
@@ -45,7 +41,6 @@ func GenerateTokenPair(userID uint, email, secret string, accessExpiration, refr
 		RefreshToken: refreshToken,
 	}, nil
 }
-
 
 func generateToken(userID uint, email, secret string, expiration time.Duration, tokenType string) (string, error) {
 	now := time.Now()
@@ -70,10 +65,9 @@ func generateToken(userID uint, email, secret string, expiration time.Duration, 
 	return tokenString, nil
 }
 
-
 func ValidateToken(tokenString, secret string) (*JWTClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		
+
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -95,7 +89,6 @@ func ValidateToken(tokenString, secret string) (*JWTClaims, error) {
 	return claims, nil
 }
 
-
 func ExtractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
 		return "", errors.New("authorization header is required")
@@ -109,11 +102,9 @@ func ExtractTokenFromHeader(authHeader string) (string, error) {
 	return authHeader[len(bearerPrefix):], nil
 }
 
-
 func GenerateRefreshToken(userID uint, email, secret string, expiration time.Duration) (string, error) {
 	return generateToken(userID, email, secret, expiration, "refresh")
 }
-
 
 func ValidateRefreshToken(tokenString, secret string) (*JWTClaims, error) {
 	claims, err := ValidateToken(tokenString, secret)
@@ -121,7 +112,6 @@ func ValidateRefreshToken(tokenString, secret string) (*JWTClaims, error) {
 		return nil, err
 	}
 
-	
 	if len(claims.Audience) == 0 || claims.Audience[0] != "refresh" {
 		return nil, errors.New("not a refresh token")
 	}
