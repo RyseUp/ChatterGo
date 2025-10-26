@@ -1,6 +1,16 @@
 basePath: /api/v1
 definitions:
-  services.RefreshTokenRequest:
+  internal_services.CreateDirectConversationRequest:
+    properties:
+      recipient_id:
+        example: 2
+        type: integer
+    required:
+    - recipient_id
+    type: object
+  internal_services.CreateGroupConversationRequest:
+    type: object
+  internal_services.RefreshTokenRequest:
     properties:
       refresh_token:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -8,7 +18,25 @@ definitions:
     required:
     - refresh_token
     type: object
-  services.UserLoginRequest:
+  internal_services.SendMessageRequest:
+    properties:
+      content:
+        example: Hello, how are you?
+        minLength: 1
+        type: string
+    required:
+    - content
+    type: object
+  internal_services.UpdateMessageRequest:
+    properties:
+      content:
+        example: Updated message content
+        minLength: 1
+        type: string
+    required:
+    - content
+    type: object
+  internal_services.UserLoginRequest:
     properties:
       email:
         example: user@example.com
@@ -20,7 +48,7 @@ definitions:
     - email
     - password
     type: object
-  services.UserRegisterRequest:
+  internal_services.UserRegisterRequest:
     properties:
       email:
         example: user@example.com
@@ -39,7 +67,7 @@ definitions:
     - password
     - username
     type: object
-  services.UserUpdateRequest:
+  internal_services.UserUpdateRequest:
     properties:
       email:
         example: newemail@example.com
@@ -75,7 +103,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services.UserLoginRequest'
+          $ref: '#/definitions/internal_services.UserLoginRequest'
       produces:
       - application/json
       responses:
@@ -139,7 +167,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services.RefreshTokenRequest'
+          $ref: '#/definitions/internal_services.RefreshTokenRequest'
       produces:
       - application/json
       responses:
@@ -177,7 +205,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services.UserRegisterRequest'
+          $ref: '#/definitions/internal_services.UserRegisterRequest'
       produces:
       - application/json
       responses:
@@ -204,6 +232,383 @@ paths:
       summary: Register a new user
       tags:
       - authentication
+  /conversations:
+    get:
+      description: Get all conversations for the authenticated user with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Conversations retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List conversations for current user
+      tags:
+      - conversations
+  /conversations/{id}:
+    get:
+      description: Get a specific conversation by ID (only for members)
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Conversation retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid conversation ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Conversation not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get conversation by ID
+      tags:
+      - conversations
+  /conversations/{id}/messages:
+    get:
+      description: Get all messages from a conversation with pagination (only for
+        members)
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Messages retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid conversation ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get messages from a conversation
+      tags:
+      - messages
+    post:
+      consumes:
+      - application/json
+      description: Send a new message to a conversation (only for members)
+      parameters:
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Message content
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_services.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Message sent successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Conversation not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Send a message to a conversation
+      tags:
+      - messages
+  /conversations/direct:
+    post:
+      consumes:
+      - application/json
+      description: Create a new direct conversation between two users
+      parameters:
+      - description: Direct conversation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_services.CreateDirectConversationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Direct conversation created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Direct conversation already exists
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a direct conversation
+      tags:
+      - conversations
+  /conversations/group:
+    post:
+      consumes:
+      - application/json
+      description: Create a new group conversation with multiple users
+      parameters:
+      - description: Group conversation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_services.CreateGroupConversationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Group conversation created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a group conversation
+      tags:
+      - conversations
+  /messages/{id}:
+    delete:
+      description: Delete a message (only by the sender)
+      parameters:
+      - description: Message ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid message ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Message not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a message
+      tags:
+      - messages
+    patch:
+      consumes:
+      - application/json
+      description: Update a message content (only by the sender)
+      parameters:
+      - description: Message ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated message content
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_services.UpdateMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: User not authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Message not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a message
+      tags:
+      - messages
   /users/{id}:
     get:
       description: Get user information by user ID
@@ -280,7 +685,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services.UserUpdateRequest'
+          $ref: '#/definitions/internal_services.UserUpdateRequest'
       produces:
       - application/json
       responses:
