@@ -46,10 +46,10 @@ func main() {
 		log.Fatalf("failed to connect DB: %v", err)
 	}
 
-	// Auto-migrate the schema
-	if err := db.AutoMigrate(&models.User{}); err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
-	}
+    // Auto-migrate the schema for all registered models
+    if err := db.AutoMigrate(models.All()...); err != nil {
+        log.Fatalf("failed to migrate database: %v", err)
+    }
 
 	// Create repository
 	repo := postgres.NewQueries(db, cfg)
