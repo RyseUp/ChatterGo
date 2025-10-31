@@ -89,6 +89,26 @@ func ValidateToken(tokenString, secret string) (*JWTClaims, error) {
 	return claims, nil
 }
 
+func PraseToken(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		// Return the secret key used for signing the token
+		return []byte("your-secret-key"), nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, ErrInvalidToken
+	}
+
+	return claims, nil
+}
+
 func ExtractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
 		return "", errors.New("authorization header is required")
