@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/RyseUp/ChatterGo/cmd/server/websocket"
 	"github.com/RyseUp/ChatterGo/config"
 	"github.com/RyseUp/ChatterGo/internal/middleware"
 	"github.com/RyseUp/ChatterGo/internal/repositories"
@@ -14,17 +15,25 @@ import (
 )
 
 type ServiceServer struct {
-	cfg *config.Config
-	r   repositories.Repository
-	svr *http.Server
+	cfg      *config.Config
+	r        repositories.Repository
+	svr      *http.Server
+	wsServer *websocket.SocketServer
 }
 
 func NewServer(cfg *config.Config, r repositories.Repository) (*ServiceServer, error) {
 	router := gin.Default()
 
+	// Initialize WebSocket server
+	wsServer, err := websocket.NewSocketServer(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create websocket server: %w", err)
+	}
+
 	s := &ServiceServer{
-		cfg: cfg,
-		r:   r,
+		cfg:      cfg,
+		r:        r,
+		wsServer: wsServer,
 		svr: &http.Server{
 			Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
 			Handler: router,
@@ -50,6 +59,10 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// WebSocket endpoint
+	router.GET("/socket.io/*any", gin.WrapH(s.wsServer.Handler()))
+	router.POST("/socket.io/*any", gin.WrapH(s.wsServer.Handler()))
 
 	api := router.Group("/api/v1")
 	{
@@ -114,5 +127,8 @@ func (s *ServiceServer) Start() error {
 // Shutdown server
 func (s *ServiceServer) Shutdown(ctx context.Context) error {
 	fmt.Print("Shutting down server...")
+	if s.wsServer != nil {
+		s.wsServer.Close()
+	}
 	return s.svr.Shutdown(ctx)
 }
