@@ -9,6 +9,8 @@ func All() []interface{} {
         &ConversationMember{},
         &Message{},
         &Media{},
+        &Notification{},
+        &NotificationPreference{},
     }
 }
 

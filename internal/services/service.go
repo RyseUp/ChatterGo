@@ -15,11 +15,19 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// WebSocketHub interface for notification broadcasting
+type WebSocketHub interface {
+	BroadcastToUser(userID uint, eventType string, data interface{}) error
+	IsUserOnline(userID uint) bool
+	GetUserSockets(userID uint) []string
+}
+
 type ServiceServer struct {
 	cfg      *config.Config
 	r        repositories.Repository
 	svr      *http.Server
 	wsServer *websocket.SocketServer
+	wsHub    WebSocketHub
 }
 
 func NewServer(cfg *config.Config, r repositories.Repository) (*ServiceServer, error) {
@@ -132,6 +140,27 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 			media.POST("/upload", s.UploadFile)
 			media.GET("/:id", s.GetMedia)
 			media.DELETE("/:id", s.DeleteMedia)
+		}
+
+		// Notification routes (protected)
+		notifications := api.Group("/notifications")
+		notifications.Use(middleware.AuthMiddleware(s.cfg.JWT.Secret))
+		{
+			notifications.GET("/", s.GetNotifications)
+			notifications.GET("/unread", s.GetUnreadNotifications)
+			notifications.PATCH("/:id/read", s.MarkNotificationAsRead)
+			notifications.PATCH("/read-all", s.MarkAllNotificationsAsRead)
+			notifications.GET("/preferences", s.GetNotificationPreferences)
+			notifications.PATCH("/preferences", s.UpdateNotificationPreferences)
+		}
+
+		// Search routes (protected)
+		search := api.Group("/search")
+		search.Use(middleware.AuthMiddleware(s.cfg.JWT.Secret))
+		{
+			search.GET("/", s.Search)
+			search.GET("/users", s.SearchUsers)
+			search.GET("/messages", s.SearchMessages)
 		}
 	}
 
