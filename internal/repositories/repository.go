@@ -14,6 +14,8 @@ type Repository interface {
 	ConversationRepository
 	MessageRepository
 	MediaRepository
+	NotificationRepository
+	SearchRepository
 }
 
 type UserRepository interface {
@@ -56,4 +58,25 @@ type MediaRepository interface {
 	UpdateMedia(ctx context.Context, id uint, updates map[string]interface{}) error
 	DeleteMedia(ctx context.Context, id uint) error
 	DeleteMediaByMessageID(ctx context.Context, messageID uint) error
+}
+
+type NotificationRepository interface {
+	CreateNotification(ctx context.Context, notification *models.Notification) error
+	GetNotificationByID(ctx context.Context, id uint) (*models.Notification, error)
+	GetNotificationsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Notification, int64, error)
+	GetUnreadNotificationsByUserID(ctx context.Context, userID uint) ([]models.Notification, error)
+	MarkNotificationAsRead(ctx context.Context, id uint) error
+	MarkAllNotificationsAsRead(ctx context.Context, userID uint) error
+	DeleteNotification(ctx context.Context, id uint) error
+	
+	// Notification Preferences
+	CreateNotificationPreference(ctx context.Context, pref *models.NotificationPreference) error
+	GetNotificationPreferenceByUserID(ctx context.Context, userID uint) (*models.NotificationPreference, error)
+	UpdateNotificationPreference(ctx context.Context, userID uint, updates map[string]interface{}) error
+}
+
+type SearchRepository interface {
+	SearchUsers(ctx context.Context, query string, limit, offset int) ([]models.User, int64, error)
+	SearchMessages(ctx context.Context, query string, conversationID *uint, limit, offset int) ([]models.Message, int64, error)
+	SearchConversations(ctx context.Context, query string, userID uint, limit, offset int) ([]models.Conversation, int64, error)
 }
