@@ -197,7 +197,7 @@ func (s *ServiceServer) UserLogin(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "login successful",
-		"data":    response,
+		"data": 	response,
 	})
 }
 
