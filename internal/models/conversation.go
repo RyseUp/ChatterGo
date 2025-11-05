@@ -22,8 +22,8 @@ type Conversation struct {
 	DeletedAt gorm.DeletedAt   `gorm:"index" json:"-"`
 
 	// Relationships
-	Members  []ConversationMember `gorm:"many2many:conversation_members;foreignKey:ID;references:ID" json:"members,omitempty"`
-	Messages []Message            `gorm:"many2many:conversation_messages;foreignKey:ID;references:ID" json:"messages,omitempty"`
+	Members  []ConversationMember `gorm:"foreignKey:ConversationID" json:"members,omitempty"`
+	Messages []Message            `gorm:"foreignKey:ConversationID" json:"messages,omitempty"`
 }
 
 type MemberRole string

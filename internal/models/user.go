@@ -17,5 +17,4 @@ type User struct {
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
-	Conversations []*Conversation `gorm:"many2many:conversation_members;foreignKey:ID;references:ID" json:"conversations"`
 }

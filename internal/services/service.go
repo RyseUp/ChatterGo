@@ -63,18 +63,6 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 	// @Produce json
 	// @Success 200 {object} map[string]interface{} "Server is running"
 	// @Router /ping [get]
-	router.Use(func(c *gin.Context) {
-    c.Header("Access-Control-Allow-Origin", "*")
-    c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-    c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    
-    if c.Request.Method == "OPTIONS" {
-        c.AbortWithStatus(204)
-        return
-    }
-    
-    c.Next()
-})
 	router.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"ok": true})
 	})
