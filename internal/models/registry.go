@@ -8,6 +8,7 @@ func All() []interface{} {
         &Conversation{},
         &ConversationMember{},
         &Message{},
+        &Media{},
     }
 }
 

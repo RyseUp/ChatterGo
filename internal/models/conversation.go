@@ -59,4 +59,5 @@ type Message struct {
 	// Relationships
 	Conversation Conversation `gorm:"foreignKey:ConversationID" json:"conversation,omitempty"`
 	Sender       User         `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
+	Media        []Media      `gorm:"foreignKey:MessageID" json:"media,omitempty"`
 }

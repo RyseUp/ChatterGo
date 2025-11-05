@@ -13,6 +13,7 @@ type Repository interface {
 	UserRepository
 	ConversationRepository
 	MessageRepository
+	MediaRepository
 }
 
 type UserRepository interface {
@@ -46,4 +47,13 @@ type MessageRepository interface {
 	GetMessagesByConversationID(ctx context.Context, conversationID uint, limit, offset int) ([]models.Message, int64, error)
 	UpdateMessage(ctx context.Context, id uint, updates map[string]interface{}) error
 	DeleteMessage(ctx context.Context, id uint) error
+}
+
+type MediaRepository interface {
+	CreateMedia(ctx context.Context, media *models.Media) error
+	GetMediaByID(ctx context.Context, id uint) (*models.Media, error)
+	GetMediaByMessageID(ctx context.Context, messageID uint) ([]models.Media, error)
+	UpdateMedia(ctx context.Context, id uint, updates map[string]interface{}) error
+	DeleteMedia(ctx context.Context, id uint) error
+	DeleteMediaByMessageID(ctx context.Context, messageID uint) error
 }

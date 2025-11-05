@@ -49,6 +49,7 @@ type AuthResponse struct {
 // @Router /auth/register [post]
 func (s *ServiceServer) UserRegister(ctx *gin.Context) {
 	var req UserRegisterRequest
+	fmt.Println("UserRegisterRequest: ", req)
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		fmt.Printf("failed to bind json: %v\n", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})

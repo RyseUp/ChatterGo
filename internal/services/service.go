@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-contrib/cors"
 	"github.com/RyseUp/ChatterGo/cmd/server/websocket"
 	"github.com/RyseUp/ChatterGo/config"
 	"github.com/RyseUp/ChatterGo/internal/middleware"
@@ -46,6 +47,15 @@ func NewServer(cfg *config.Config, r repositories.Repository) (*ServiceServer, e
 }
 
 func (s *ServiceServer) setupRoutes(router *gin.Engine) {
+	// CORS middleware - allow all origins for development
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
 	// Ping godoc
 	// @Summary Health check
 	// @Description Check if the server is running
@@ -113,7 +123,20 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 			messages.PATCH("/:id", s.UpdateMessage)
 			messages.DELETE("/:id", s.DeleteMessage)
 		}
+
+		// Media routes (protected)
+		media := api.Group("/media")
+		media.Use(middleware.AuthMiddleware(s.cfg.JWT.Secret))
+		{
+			media.POST("/presign", s.PresignUpload)
+			media.POST("/upload", s.UploadFile)
+			media.GET("/:id", s.GetMedia)
+			media.DELETE("/:id", s.DeleteMedia)
+		}
 	}
+
+	// Static file serving for uploads (public)
+	router.Static("/uploads", "./uploads")
 }
 
 // Start server
