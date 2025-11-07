@@ -8,7 +8,7 @@ import (
 
 type Media struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
-	MessageID uint           `gorm:"not null;index" json:"message_id"`
+	MessageID *uint          `gorm:"index" json:"message_id"` // Nullable: can be uploaded before message is created
 	URL       string         `gorm:"size:500;not null" json:"url"`
 	MimeType  string         `gorm:"size:100;not null" json:"mime_type"`
 	Size      int64          `gorm:"not null" json:"size"`
@@ -18,5 +18,5 @@ type Media struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	Message Message `gorm:"foreignKey:MessageID;constraint:OnDelete:CASCADE" json:"message,omitempty"`
+	Message *Message `gorm:"foreignKey:MessageID;constraint:OnDelete:CASCADE" json:"message,omitempty"`
 }

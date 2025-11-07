@@ -26,23 +26,24 @@ type ServiceServer struct {
 	cfg      *config.Config
 	r        repositories.Repository
 	svr      *http.Server
-	wsServer *websocket.SocketServer
+	wsServer *websocket.WebSocketServer
 	wsHub    WebSocketHub
 }
 
 func NewServer(cfg *config.Config, r repositories.Repository) (*ServiceServer, error) {
 	router := gin.Default()
 
-	// Initialize WebSocket server
-	wsServer, err := websocket.NewSocketServer(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create websocket server: %w", err)
-	}
+	// Initialize WebSocket server with JWT secret
+	wsServer := websocket.NewWebSocketServer(r, cfg.JWT.Secret)
+	
+	// Start WebSocket server in background
+	go wsServer.Run()
 
 	s := &ServiceServer{
 		cfg:      cfg,
 		r:        r,
 		wsServer: wsServer,
+		wsHub:    wsServer, // WebSocketServer implements WebSocketHub interface
 		svr: &http.Server{
 			Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
 			Handler: router,
@@ -55,14 +56,47 @@ func NewServer(cfg *config.Config, r repositories.Repository) (*ServiceServer, e
 }
 
 func (s *ServiceServer) setupRoutes(router *gin.Engine) {
-	// CORS middleware - allow all origins for development
+	// CORS middleware - allow specific origins for development
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "*"},
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:5173", "http://127.0.0.1:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "Access-Control-Request-Method", "Access-Control-Request-Headers"},
+		ExposeHeaders:    []string{"Content-Length", "Access-Control-Allow-Origin"},
 		AllowCredentials: true,
+		MaxAge:           12 * 3600, // 12 hours
 	}))
+
+	// Additional CORS handler for preflight requests
+	router.Use(func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		allowedOrigins := []string{
+			"http://localhost:3000",
+			"http://localhost:5173", 
+			"http://localhost:8080",
+			"http://127.0.0.1:5173",
+			"http://127.0.0.1:3000",
+		}
+		
+		// Check if origin is allowed
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				c.Header("Access-Control-Allow-Origin", origin)
+				break
+			}
+		}
+		
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Max-Age", "43200") // 12 hours
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
 
 	// Ping godoc
 	// @Summary Health check
@@ -79,8 +113,7 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// WebSocket endpoint
-	router.GET("/socket.io/*any", gin.WrapH(s.wsServer.Handler()))
-	router.POST("/socket.io/*any", gin.WrapH(s.wsServer.Handler()))
+	router.GET("/ws", gin.WrapH(s.wsServer.Handler()))
 
 	api := router.Group("/api/v1")
 	{
@@ -110,6 +143,7 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 		{
 			usersProtected.GET("/profile", s.GetUserProfile)
 			usersProtected.PATCH("/profile", s.UpdateUserProfile)
+			usersProtected.POST("/profile/avatar", s.UploadAvatar)
 		}
 
 		// Conversation routes (protected)

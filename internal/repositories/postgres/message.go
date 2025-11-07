@@ -17,6 +17,8 @@ func (r *Queries) GetMessageByID(ctx context.Context, id uint) (*models.Message,
 	var message models.Message
 	err := r.db.WithContext(ctx).
 		Preload("Sender").
+		Preload("Media").
+		Order("created_at ASC").
 		First(&message, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("GetMessageByID: %w", err)
@@ -41,8 +43,9 @@ func (r *Queries) GetMessagesByConversationID(ctx context.Context, conversationI
 	// Get messages with pagination, ordered by creation time (newest first)
 	err = r.db.WithContext(ctx).
 		Preload("Sender").
+		Preload("Media").
 		Where("conversation_id = ?", conversationID).
-		Order("created_at DESC").
+		Order("created_at ASC").
 		Limit(limit).
 		Offset(offset).
 		Find(&messages).Error

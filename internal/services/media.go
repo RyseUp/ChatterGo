@@ -264,35 +264,34 @@ func (s *ServiceServer) UploadFile(ctx *gin.Context) {
 	src.Read(buffer)
 	mimeType := http.DetectContentType(buffer)
 
-	// Get and validate message_id (required)
+	// Get and validate message_id (optional - allows uploading before message creation)
+	var messageID *uint
 	messageIDStr := ctx.PostForm("message_id")
-	if messageIDStr == "" {
-		// Clean up uploaded file
-		os.Remove(filepath.Join(config.LocalStoragePath, filepath.Base(relativePath)))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "message_id is required"})
-		return
-	}
+	if messageIDStr != "" {
+		parsedID, err := strconv.ParseUint(messageIDStr, 10, 32)
+		if err != nil {
+			// Clean up uploaded file
+			os.Remove(filepath.Join(config.LocalStoragePath, filepath.Base(relativePath)))
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid message_id format"})
+			return
+		}
 
-	messageID, err := strconv.ParseUint(messageIDStr, 10, 32)
-	if err != nil {
-		// Clean up uploaded file
-		os.Remove(filepath.Join(config.LocalStoragePath, filepath.Base(relativePath)))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid message_id format"})
-		return
-	}
+		// Validate that the message exists
+		_, err = s.r.GetMessageByID(ctx, uint(parsedID))
+		if err != nil {
+			// Clean up uploaded file
+			os.Remove(filepath.Join(config.LocalStoragePath, filepath.Base(relativePath)))
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "message not found", "details": "the specified message_id does not exist"})
+			return
+		}
 
-	// Validate that the message exists
-	_, err = s.r.GetMessageByID(ctx, uint(messageID))
-	if err != nil {
-		// Clean up uploaded file
-		os.Remove(filepath.Join(config.LocalStoragePath, filepath.Base(relativePath)))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "message not found", "details": "the specified message_id does not exist"})
-		return
+		id := uint(parsedID)
+		messageID = &id
 	}
 
 	// Create media record
 	media := &models.Media{
-		MessageID: uint(messageID),
+		MessageID: messageID, // Can be nil if uploading before message creation
 		URL:       fileURL,
 		MimeType:  mimeType,
 		Size:      file.Size,
