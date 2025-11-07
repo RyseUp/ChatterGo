@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS Test</title>
+</head>
+<body>
+    <h1>ChatterGo CORS Test</h1>
+    <button onclick="testCORS()">Test CORS</button>
+    <div id="result"></div>
+
+    <script>
+        async function testCORS() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing CORS...';
+
+            try {
+                // Test OPTIONS preflight
+                console.log('Testing OPTIONS preflight...');
+                
+                // Test actual request
+                const response = await fetch('http://localhost:9090/ping', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3 style="color: green;">✅ CORS Test Successful!</h3>
+                        <p>Response: ${JSON.stringify(data)}</p>
+                        <p>Status: ${response.status}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: orange;">⚠️ Request Failed</h3>
+                        <p>Status: ${response.status}</p>
+                        <p>But CORS is working (no CORS error)</p>
+                    `;
+                }
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: red;">❌ CORS Error</h3>
+                        <p>${error.message}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: orange;">⚠️ Other Error</h3>
+                        <p>${error.message}</p>
+                        <p>CORS might be working, but there's another issue</p>
+                    `;
+                }
+            }
+        }
+
+        // Test with Authorization header
+        async function testWithAuth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing CORS with Authorization header...';
+
+            try {
+                const response = await fetch('http://localhost:9090/api/v1/conversations?limit=50&offset=0', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'
+                    }
+                });
+
+                if (response.status === 401) {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: green;">✅ CORS Working!</h3>
+                        <p>Got 401 Unauthorized (expected without valid token)</p>
+                        <p>CORS is properly configured</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: green;">✅ CORS Working!</h3>
+                        <p>Status: ${response.status}</p>
+                    `;
+                }
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: red;">❌ CORS Error</h3>
+                        <p>${error.message}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: orange;">⚠️ Other Error</h3>
+                        <p>${error.message}</p>
+                    `;
+                }
+            }
+        }
+    </script>
+
+    <br><br>
+    <button onclick="testWithAuth()">Test CORS with Authorization Header</button>
+
+    <h2>Instructions:</h2>
+    <ol>
+        <li>Start your ChatterGo server: <code>make run</code></li>
+        <li>Open this HTML file in your browser from <code>http://localhost:5173</code> or any local server</li>
+        <li>Click the test buttons</li>
+        <li>Check the results</li>
+    </ol>
+
+    <h3>Expected Results:</h3>
+    <ul>
+        <li>✅ First test should show "CORS Test Successful" with <code>{"ok": true}</code></li>
+        <li>✅ Second test should show "CORS Working!" with 401 Unauthorized (normal without valid token)</li>
+        <li>❌ If you see CORS errors, the server needs to be restarted</li>
+    </ul>
+</body>
+</html>
+
+
+
+
+

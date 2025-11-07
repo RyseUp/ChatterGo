@@ -63,6 +63,8 @@ type ConversationListResponse struct {
 // @Router /conversations/direct [post]
 func (s *ServiceServer) CreateDirectConversation(ctx *gin.Context) {
 	userID, exists := ctx.Get("user_id")
+	fmt.Println("userID", userID)
+	fmt.Println("exists", exists)
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
 		return
@@ -74,6 +76,9 @@ func (s *ServiceServer) CreateDirectConversation(ctx *gin.Context) {
 		return
 	}
 
+	fmt.Println("req", req)
+	fmt.Println("userID", userID.(uint))
+	fmt.Println("req.RecipientID", req.RecipientID)
 	// Check if user is trying to create conversation with themselves
 	if req.RecipientID == userID.(uint) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "cannot create direct conversation with yourself"})

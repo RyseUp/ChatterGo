@@ -1,17 +1,11 @@
-# Task 003 – WebSocket Realtime Service
-
 ## Goal
-
-Provide real-time delivery of messages and user presence.
+Allow users to upload and attach images/files in chat messages.
 
 ## Features
-
-- [x] Setup `/ws` WebSocket endpoint (integrated via `/socket.io/*`)
-- [x] Authenticate socket with JWT
-- [x] Track user online/offline status
-- [x] Join/leave conversation rooms
-- [x] Broadcast message.created events (with DB persistence)
-- [x] Broadcast typing.start/stop
-- [x] Send delivery receipts (delivered/read) - ready for DB schema extension
-- [x] Implement ping/pong heartbeat
-- [x] Graceful reconnect with resume token
+- [ ] Model: Media (id, message_id, url, mime, size)
+- [ ] API: POST /media/presign (return upload URL)
+- [ ] Local FS upload (dev) or S3-compatible
+- [ ] Validate file type and size
+- [ ] Link uploaded media to message
+- [ ] Migration: create_media_table.sql
+- [ ] Unit tests for upload handler
