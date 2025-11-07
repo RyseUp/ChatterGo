@@ -23,6 +23,7 @@ type UserResponse struct {
 	ID          uint       `json:"id" example:"1"`
 	Email       string     `json:"email" example:"user@example.com"`
 	Username    string     `json:"username" example:"johndoe"`
+	AvatarURL   *string    `json:"avatar_url,omitempty" example:"http://localhost:9090/uploads/avatar.jpg"`
 	IsActive    bool       `json:"is_active" example:"true"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty" example:"2023-10-24T10:30:00Z"`
 	CreatedAt   time.Time  `json:"created_at" example:"2023-10-24T10:30:00Z"`
@@ -102,6 +103,7 @@ func (s *ServiceServer) UserRegister(ctx *gin.Context) {
 			ID:        user.ID,
 			Email:     user.Email,
 			Username:  user.Username,
+			AvatarURL: user.AvatarURL,
 			IsActive:  user.IsActive,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
@@ -187,6 +189,7 @@ func (s *ServiceServer) UserLogin(ctx *gin.Context) {
 			ID:          user.ID,
 			Email:       user.Email,
 			Username:    user.Username,
+			AvatarURL:   user.AvatarURL,
 			IsActive:    user.IsActive,
 			LastLoginAt: &now,
 			CreatedAt:   user.CreatedAt,
@@ -337,6 +340,7 @@ func (s *ServiceServer) GetUserByID(ctx *gin.Context) {
 		ID:          user.ID,
 		Email:       user.Email,
 		Username:    user.Username,
+		AvatarURL:   user.AvatarURL,
 		IsActive:    user.IsActive,
 		LastLoginAt: user.LastLoginAt,
 		CreatedAt:   user.CreatedAt,
@@ -379,6 +383,7 @@ func (s *ServiceServer) GetUserProfile(ctx *gin.Context) {
 		ID:          user.ID,
 		Email:       user.Email,
 		Username:    user.Username,
+		AvatarURL:   user.AvatarURL,
 		IsActive:    user.IsActive,
 		LastLoginAt: user.LastLoginAt,
 		CreatedAt:   user.CreatedAt,
@@ -456,6 +461,7 @@ func (s *ServiceServer) UpdateUserProfile(ctx *gin.Context) {
 		ID:          user.ID,
 		Email:       user.Email,
 		Username:    user.Username,
+		AvatarURL:   user.AvatarURL,
 		IsActive:    user.IsActive,
 		LastLoginAt: user.LastLoginAt,
 		CreatedAt:   user.CreatedAt,
@@ -490,6 +496,7 @@ func (s *ServiceServer) GetUserByEmail(ctx *gin.Context) {
 		ID:          user.ID,
 		Email:       user.Email,
 		Username:    user.Username,
+		AvatarURL:   user.AvatarURL,
 		IsActive:    user.IsActive,
 		LastLoginAt: user.LastLoginAt,
 		CreatedAt:   user.CreatedAt,

@@ -17,14 +17,23 @@ type SendMessageRequest struct {
 	Content string `json:"content" binding:"required,min=1" example:"Hello, how are you?"`
 }
 
+type MediaResponse struct {
+	ID       uint   `json:"id" example:"1"`
+	URL      string `json:"url" example:"http://localhost:9090/uploads/image.jpg"`
+	MimeType string `json:"mime_type" example:"image/jpeg"`
+	Size     int64  `json:"size" example:"102400"`
+	Filename string `json:"filename" example:"image.jpg"`
+}
+
 type MessageResponse struct {
-	ID             uint         `json:"id" example:"1"`
-	ConversationID uint         `json:"conversation_id" example:"1"`
-	SenderID       uint         `json:"sender_id" example:"2"`
-	Content        string       `json:"content" example:"Hello, how are you?"`
-	CreatedAt      time.Time    `json:"created_at" example:"2023-10-24T10:30:00Z"`
-	UpdatedAt      time.Time    `json:"updated_at" example:"2023-10-24T10:30:00Z"`
-	Sender         UserResponse `json:"sender"`
+	ID             uint            `json:"id" example:"1"`
+	ConversationID uint            `json:"conversation_id" example:"1"`
+	SenderID       uint            `json:"sender_id" example:"2"`
+	Content        string          `json:"content" example:"Hello, how are you?"`
+	Media          []MediaResponse `json:"media,omitempty" example:"[]"`
+	CreatedAt      time.Time       `json:"created_at" example:"2023-10-24T10:30:00Z"`
+	UpdatedAt      time.Time       `json:"updated_at" example:"2023-10-24T10:30:00Z"`
+	Sender         UserResponse    `json:"sender"`
 }
 
 type MessageListResponse struct {
@@ -332,17 +341,33 @@ func (s *ServiceServer) DeleteMessage(ctx *gin.Context) {
 
 // Helper function to build message response
 func (s *ServiceServer) buildMessageResponse(message *models.Message) MessageResponse {
+	// Build media responses
+	var mediaResponses []MediaResponse
+	if len(message.Media) > 0 {
+		for _, media := range message.Media {
+			mediaResponses = append(mediaResponses, MediaResponse{
+				ID:       media.ID,
+				URL:      media.URL,
+				MimeType: media.MimeType,
+				Size:     media.Size,
+				Filename: media.Filename,
+			})
+		}
+	}
+
 	return MessageResponse{
 		ID:             message.ID,
 		ConversationID: message.ConversationID,
 		SenderID:       message.SenderID,
 		Content:        message.Content,
+		Media:          mediaResponses,
 		CreatedAt:      message.CreatedAt,
 		UpdatedAt:      message.UpdatedAt,
 		Sender: UserResponse{
 			ID:          message.Sender.ID,
 			Email:       message.Sender.Email,
 			Username:    message.Sender.Username,
+			AvatarURL:   message.Sender.AvatarURL,
 			IsActive:    message.Sender.IsActive,
 			LastLoginAt: message.Sender.LastLoginAt,
 			CreatedAt:   message.Sender.CreatedAt,

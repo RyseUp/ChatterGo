@@ -381,6 +381,7 @@ func (s *ServiceServer) buildConversationResponse(conversation *models.Conversat
 				ID:          member.User.ID,
 				Email:       member.User.Email,
 				Username:    member.User.Username,
+				AvatarURL:   member.User.AvatarURL,
 				IsActive:    member.User.IsActive,
 				LastLoginAt: member.User.LastLoginAt,
 				CreatedAt:   member.User.CreatedAt,

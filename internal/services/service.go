@@ -143,6 +143,7 @@ func (s *ServiceServer) setupRoutes(router *gin.Engine) {
 		{
 			usersProtected.GET("/profile", s.GetUserProfile)
 			usersProtected.PATCH("/profile", s.UpdateUserProfile)
+			usersProtected.POST("/profile/avatar", s.UploadAvatar)
 		}
 
 		// Conversation routes (protected)

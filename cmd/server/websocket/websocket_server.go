@@ -1,4 +1,4 @@
-package websocket
+	package websocket
 
 import (
 	"context"
@@ -460,13 +460,22 @@ func (c *Client) handleSendMessage(payload interface{}) {
 		return
 	}
 
-	log.Printf("[WEBSOCKET] 📨 Parsed message.send: UserID=%d, RoomID=%s, Message=%s, ClientID=%s", 
-		c.UserID, p.RoomID, p.Message, p.ClientID)
+	log.Printf("[WEBSOCKET] 📨 Parsed message.send: UserID=%d, RoomID=%s, Message=%s, ClientID=%s, MediaID=%d", 
+		c.UserID, p.RoomID, p.Message, p.ClientID, p.MediaID)
 
-	if p.RoomID == "" || p.Message == "" {
-		log.Printf("[WEBSOCKET] ❌ Missing required fields: RoomID=%s, Message=%s", p.RoomID, p.Message)
+	if p.RoomID == "" {
+		log.Printf("[WEBSOCKET] ❌ Missing required field: RoomID=%s", p.RoomID)
 		c.sendResponse(EventError, map[string]interface{}{
-			"error": "missing room_id or message",
+			"error": "room_id is required",
+		})
+		return
+	}
+
+	// Message must have either text content or media
+	if p.Message == "" && p.MediaID == 0 {
+		log.Printf("[WEBSOCKET] ❌ Message must have either text content or media")
+		c.sendResponse(EventError, map[string]interface{}{
+			"error": "message must have either text content or media",
 		})
 		return
 	}
@@ -732,11 +741,45 @@ func (s *WebSocketServer) persistMessage(userID uint64, p SendMessagePayload) (*
 	log.Printf("[WEBSOCKET] ✅ Message created successfully in DB: ID=%d, CreatedAt=%v", 
 		msg.ID, msg.CreatedAt)
 
+	// Handle media attachment if provided
+	var mediaPayloads []MediaPayload
+	if p.MediaID > 0 {
+		// Get the media record
+		media, err := s.repo.GetMediaByID(ctx, p.MediaID)
+		if err != nil {
+			log.Printf("[WEBSOCKET] ⚠️ Failed to get media by ID %d: %v", p.MediaID, err)
+			// Continue without media rather than failing the entire message
+		} else {
+			// Verify the media is not already linked to another message (security check)
+			if media.MessageID == nil || *media.MessageID == 0 || *media.MessageID == msg.ID {
+				// Update media to link it to this message
+				messageID := msg.ID
+				if err := s.repo.UpdateMedia(ctx, p.MediaID, map[string]interface{}{
+					"message_id": messageID,
+				}); err != nil {
+					log.Printf("[WEBSOCKET] ⚠️ Failed to link media to message: %v", err)
+				} else {
+					mediaPayloads = append(mediaPayloads, MediaPayload{
+						ID:       media.ID,
+						URL:      media.URL,
+						MimeType: media.MimeType,
+						Size:     media.Size,
+						Filename: media.Filename,
+					})
+					log.Printf("[WEBSOCKET] ✅ Linked media %d to message %d", p.MediaID, msg.ID)
+				}
+			} else {
+				log.Printf("[WEBSOCKET] ⚠️ Media %d is already linked to another message (%d)", p.MediaID, *media.MessageID)
+			}
+		}
+	}
+
 	return &MessageCreatedPayload{
 		ID:             msg.ID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
-		Content:       msg.Content,
+		Content:        msg.Content,
+		Media:          mediaPayloads,
 		CreatedAt:      msg.CreatedAt,
 		UpdatedAt:      msg.UpdatedAt,
 		ClientID:       p.ClientID,
@@ -781,11 +824,27 @@ func (s *WebSocketServer) getMissedMessages(userID uint64, lastMessageID uint64)
 		// Filter messages after lastMessageID
 		for _, msg := range messages {
 			if uint64(msg.ID) > lastMessageID {
+				// Get media for this message
+				mediaList, err := s.repo.GetMediaByMessageID(ctx, msg.ID)
+				var mediaPayloads []MediaPayload
+				if err == nil {
+					for _, media := range mediaList {
+						mediaPayloads = append(mediaPayloads, MediaPayload{
+							ID:       media.ID,
+							URL:      media.URL,
+							MimeType: media.MimeType,
+							Size:     media.Size,
+							Filename: media.Filename,
+						})
+					}
+				}
+
 				allMissedMessages = append(allMissedMessages, &MessageCreatedPayload{
 					ID:             msg.ID,
 					ConversationID: msg.ConversationID,
 					SenderID:       msg.SenderID,
 					Content:        msg.Content,
+					Media:          mediaPayloads,
 					CreatedAt:      msg.CreatedAt,
 					UpdatedAt:      msg.UpdatedAt,
 				})
